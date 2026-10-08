@@ -117,6 +117,8 @@ tbody tr{border-bottom:1px solid var(--border);} tbody tr:hover{background:#f0f9
     <div class="mpanel" id="mPanel">
       <div class="prow">
         <button class="pb on" id="pa" onclick="applyP('all')">All</button>
+        <button class="pb" id="pytd" onclick="applyP('ytd')">YTD</button>
+        <button class="pb" id="pl12" onclick="applyP('last12')">Last 12</button>
         <button class="pb" id="pl3" onclick="applyP('last3')">Last 3</button>
         <button class="pb" id="pl6" onclick="applyP('last6')">Last 6</button>
         <button class="pb clr" onclick="clearM()">Clear</button>
@@ -274,7 +276,24 @@ function avgAge(o){if(!o)return'—';const m={'Under 20':17,'20-29':24,'30-39':3
 
 function toggleM(){const p=$('mPanel');p.style.display=p.style.display==='block'?'none':'block';}
 document.addEventListener('click',e=>{const t=$('mTrig'),p=$('mPanel');if(p&&t&&!t.contains(e.target)&&!p.contains(e.target))p.style.display='none';});
-function applyP(k){document.querySelectorAll('.pb').forEach(b=>b.classList.remove('on'));const all=RAW.months;aMo=k==='all'?new Set(['all']):k==='last3'?new Set(all.slice(-3)):new Set(all.slice(-6));$('p'+k[0]+(k==='all'?'a':k==='last3'?'l3':'l6'))?.classList.add('on');syncCk();updML();renderAll();}
+function applyP(k){
+  document.querySelectorAll('.pb').forEach(b=>b.classList.remove('on'));
+  const all=RAW.months;
+  if(k==='all'){aMo=new Set(['all']);}
+  else if(k==='last3'){aMo=new Set(all.slice(-3));}
+  else if(k==='last6'){aMo=new Set(all.slice(-6));}
+  else if(k==='last12'){aMo=new Set(all.slice(-12));}
+  else if(k==='ytd'){
+    // Calendar year to date: months where the year portion matches the current calendar year
+    // RAW months are formatted as "Mon YY" e.g. "Jan 26"
+    const curYY=String(new Date().getFullYear()).slice(-2);
+    const ytdMonths=all.filter(m=>m.slice(-2)===curYY);
+    aMo=ytdMonths.length?new Set(ytdMonths):new Set(['all']);
+  }
+  const btnId=k==='all'?'pa':k==='ytd'?'pytd':k==='last12'?'pl12':k==='last3'?'pl3':'pl6';
+  $(btnId)?.classList.add('on');
+  syncCk();updML();renderAll();
+}
 function clearM(){aMo=new Set(['all']);document.querySelectorAll('.pb').forEach(b=>b.classList.remove('on'));$('pa')?.classList.add('on');syncCk();updML();renderAll();}
 function syncCk(){document.querySelectorAll('.cki input').forEach(cb=>{cb.checked=aMo.has('all')||aMo.has(cb.dataset.m);});}
 function updML(){const l=$('mLbl');if(!l)return;if(aMo.has('all')||!aMo.size)l.textContent='All Months';else if(aMo.size===1)l.textContent=fmtM([...aMo][0]);else l.textContent=aMo.size+' months selected';}

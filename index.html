@@ -453,9 +453,10 @@ function renderAll(){
 
     const filtSite=(RAW.companies||[]).filter(c=>aSite==='all'||c.name===aSite).map(c=>{
       const bkts2=months.map(m=>aPos!=='all'?c.byPos?.[aPos]?.[m]||{total:0,suitable:0,unsuitable:0}:c.byMonth?.[m]||{total:0,suitable:0,unsuitable:0});
-      const t=bkts2.reduce((a,b)=>a+(b.total||0),0),s=bkts2.reduce((a,b)=>a+(b.suitable||0),0);
-      const ph=c.psych?.high||0;
-      return{name:c.name,display:c.display||c.name,ta:c.ta,age:c.age,total:t,suit:s,unsuitable:t-s,suit_pct:t?+(s/t*100).toFixed(1):0,psych_high:ph};
+      const mv=merge(bkts2);
+      const t=mv.total,s=mv.suitable;
+      const ph=mv.psych?.high||0;
+      return{name:c.name,display:c.display||c.name,ta:mv.ta,age:mv.age,total:t,suit:s,unsuitable:t-s,suit_pct:t?+(s/t*100).toFixed(1):0,psych_high:ph};
     }).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
     const gT2=filtSite.reduce((a,b)=>a+b.total,0),gS2=filtSite.reduce((a,b)=>a+b.suit,0);
     const sB=$('siteTbody');

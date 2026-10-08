@@ -370,7 +370,7 @@ function renderTASite(dir){
   if(dir==='desc'){const b=$('taSortDesc');if(b){b.style.background='var(--red-lt)';b.style.color='var(--red)';b.style.borderColor='var(--red)';}}
   if(charts['cTASite'])charts['cTASite'].destroy();
   const ctx=$('cTASite');if(!ctx)return;
-  charts['cTASite']=new Chart(ctx,{type:'bar',data:{labels:cos.map(c=>c.display||c.name),datasets:[{label:'Median days',data:cos.map(c=>(c.ta/24).toFixed(1)),backgroundColor:T,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#eef2f5'},ticks:{callback:v=>v+' bd'}},y:{grid:{display:false}}}}});
+  charts['cTASite']=new Chart(ctx,{type:'bar',data:{labels:cos.map(c=>c.display||c.name),datasets:[{label:'Median days',data:cos.map(c=>c.ta>0?c.ta.toFixed(1):0),backgroundColor:T,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#eef2f5'},ticks:{callback:v=>v+' bd'}},y:{grid:{display:false}}}}});
 }
 function sortTA(dir){window._taSortDir=dir;renderTASite(dir);}
 
@@ -462,18 +462,18 @@ function renderAll(){
   const taM=mB.map(b=>b.ta||0),taMPos=taM.filter(t=>t>0);
   const bestTA=taMPos.length?Math.min(...taMPos):0;
   se('kpiTAPeriod',fmtD(v.ta)); se('kpiBestTA',bestTA?fmtD(bestTA):'—'); se('kpiBestTAMo',bestTA?fmtM(months[taM.indexOf(bestTA)]):'—');
-  dc('cTAMonth','bar',{labels,datasets:[{label:'Median days',data:taM.map(h=>h?(h/24).toFixed(1):0),backgroundColor:taM.map(h=>h>0&&h/24<=5?G:T),borderRadius:5}]},{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#eef2f5'},ticks:{callback:v=>v+' bd'}}}});
+  dc('cTAMonth','bar',{labels,datasets:[{label:'Median days',data:taM.map(h=>h?h.toFixed(1):0),backgroundColor:taM.map(h=>h>0&&h<=5?G:T),borderRadius:5}]},{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#eef2f5'},ticks:{callback:v=>v+' bd'}}}});
 
   if(HAS_COMPANIES){
     const filtCos=(RAW.companies||[]).filter(c=>aSite==='all'||c.name===aSite).map(c=>{
       const E2={total:0,suitable:0,unsuitable:0,medium:0,light:0,notsuit:0,suit_pct:0,ta:0,male:0,female:0,unspecified:0,age:{},k10:{low:0,moderate:0,high:0,vhigh:0},psych:{high:0,low:0,suit_high:0,suit_low:0,unsuit_high:0,unsuit_low:0}};
       const bktsC=months.map(m=>aPos!=='all'?c.byPos?.[aPos]?.[m]||E2:c.byMonth?.[m]||E2);
       const mv2=merge(bktsC);
-      return{name:c.name,display:c.display||c.name,ta:mv2.ta,total:mv2.total};
+      return{name:c.name,display:c.display||c.name,ta:mv2.ta/24,total:mv2.total};
     }).filter(c=>c.ta>0);
     window._taCos=filtCos.map(c=>({name:c.name,display:c.display||c.name,ta:c.ta}));
     const cosTA=[...filtCos].sort((a,b)=>a.ta-b.ta);
-    if(cosTA.length){se('kpiFastestTA',cosTA[0].ta<12?'Same Day':fmtD(parseFloat(cosTA[0].ta)));se('kpiFastestSite',cosTA[0].display||cosTA[0].name);se('kpiSlowestTA',fmtD(parseFloat(cosTA[cosTA.length-1].ta)));se('kpiSlowestSite',cosTA[cosTA.length-1].display||cosTA[cosTA.length-1].name);}
+    if(cosTA.length){se('kpiFastestTA',cosTA[0].ta<0.5?'Same Day':fmtD(cosTA[0].ta));se('kpiFastestSite',cosTA[0].display||cosTA[0].name);se('kpiSlowestTA',fmtD(cosTA[cosTA.length-1].ta));se('kpiSlowestSite',cosTA[cosTA.length-1].display||cosTA[cosTA.length-1].name);}
     renderTASite(window._taSortDir||'none');
 
     const filtSite=(RAW.companies||[]).filter(c=>aSite==='all'||c.name===aSite).map(c=>{
@@ -481,7 +481,7 @@ function renderAll(){
       const mv=merge(bkts2);
       const t=mv.total,s=mv.suitable;
       const ph=mv.psych?.high||0;
-      return{name:c.name,display:c.display||c.name,ta:mv.ta,age:mv.age,total:t,suit:s,unsuitable:t-s,suit_pct:t?+(s/t*100).toFixed(1):0,psych_high:ph};
+      return{name:c.name,display:c.display||c.name,ta:mv.ta/24,age:mv.age,total:t,suit:s,unsuitable:t-s,suit_pct:t?+(s/t*100).toFixed(1):0,psych_high:ph};
     }).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
     const gT2=filtSite.reduce((a,b)=>a+b.total,0),gS2=filtSite.reduce((a,b)=>a+b.suit,0);
     const sB=$('siteTbody');

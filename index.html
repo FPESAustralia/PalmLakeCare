@@ -206,6 +206,7 @@ tbody tr{border-bottom:1px solid var(--border);} tbody tr:hover{background:#f0f9
       <th onclick="qs('posTable',3)">Suitable<span class="si"></span></th>
       <th onclick="qs('posTable',4)">Unsuitable<span class="si"></span></th>
       <th onclick="qs('posTable',5)">Suit Rate<span class="si"></span></th>
+      <th onclick="qs('posTable',6)">Avg Age<span class="si"></span></th>
     </tr></thead><tbody id="posTbody"></tbody></table></div>
   </div>
 </div>
@@ -434,8 +435,8 @@ function renderAll(){
       if(HAS_COMPANIES&&aSite!=='all'){const co=RAW.companies?.find(c=>c.name===aSite);return co?.byPos?.[p.position]?.[m]||{total:0,suitable:0};}
       return p.byMonth?.[m]||{total:0,suitable:0};
     });
-    const t=bkts.reduce((a,b)=>a+(b.total||0),0),s=bkts.reduce((a,b)=>a+(b.suitable||0),0);
-    return{position:p.position,task_rating:p.task_rating,note:p.note,total:t,suit:s,suit_pct:t?+(s/t*100).toFixed(1):0};
+    const mv=merge(bkts);
+    return{position:p.position,task_rating:p.task_rating,note:p.note,total:mv.total,suit:mv.suitable,suit_pct:mv.suit_pct,age:mv.age};
   }).filter(p=>aPos==='all'||p.position===aPos).sort((a,b)=>b.total-a.total);
 
   const top5=posList.filter(p=>p.total>0).slice(0,5),t5g=posList.reduce((a,b)=>a+b.total,0);
@@ -448,8 +449,8 @@ function renderAll(){
   dc('cPosSuit','bar',{labels:top10.map(p=>p.position),datasets:[{label:'Suit %',data:top10.map(p=>p.suit_pct),backgroundColor:top10.map(p=>p.suit_pct>=95?G:p.suit_pct>=85?A:R),borderRadius:4}]},{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:0,max:100,grid:{color:'#eef2f5'},ticks:{callback:v=>v+'%'}},y:{grid:{display:false}}}});
   const pGT=posList.reduce((a,b)=>a+b.total,0),pGS=posList.reduce((a,b)=>a+b.suit,0);
   const pB=$('posTbody');
-  pB.innerHTML=posList.map(p=>{const n=POS_NOTES[p.position],ic=n?'<span class="ii" data-tip="'+n+'">i</span>':'';return'<tr><td><strong>'+p.position+'</strong>'+ic+'</td><td>'+rb(p.task_rating)+'</td><td data-sort="'+p.total+'">'+p.total+'</td><td>'+p.suit+'</td><td>'+(p.total-p.suit)+'</td><td data-sort="'+p.suit_pct+'">'+pill(p.suit_pct)+'</td></tr>';}).join('');
-  pB.insertAdjacentHTML('beforeend','<tr class="gt"><td><strong>Total</strong></td><td>—</td><td>'+pGT+'</td><td>'+pGS+'</td><td>'+(pGT-pGS)+'</td><td>'+pill(pGT?(pGS/pGT*100).toFixed(1):0)+'</td></tr>');
+  pB.innerHTML=posList.map(p=>{const n=POS_NOTES[p.position],ic=n?'<span class="ii" data-tip="'+n+'">i</span>':'';const pa=avgAge(p.age||{});return'<tr><td><strong>'+p.position+'</strong>'+ic+'</td><td>'+rb(p.task_rating)+'</td><td data-sort="'+p.total+'">'+p.total+'</td><td>'+p.suit+'</td><td>'+(p.total-p.suit)+'</td><td data-sort="'+p.suit_pct+'">'+pill(p.suit_pct)+'</td><td data-sort="'+(parseFloat(pa)||0)+'">'+pa+' yrs</td></tr>';}).join('');
+  pB.insertAdjacentHTML('beforeend','<tr class="gt"><td><strong>Total</strong></td><td>—</td><td>'+pGT+'</td><td>'+pGS+'</td><td>'+(pGT-pGS)+'</td><td>'+pill(pGT?(pGS/pGT*100).toFixed(1):0)+'</td><td>'+avgAge(v.age||{})+' yrs</td></tr>');
 
   dc('cGender','doughnut',{labels:['Male','Female','Unspecified'],datasets:[{data:[v.male||0,v.female||0,v.unspecified||0],backgroundColor:[T,'#f472b6',S],borderWidth:0}]},{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:ctx=>{const t2=ctx.dataset.data.reduce((a,b)=>a+b,0);return ctx.label+': '+ctx.raw+' ('+pct(ctx.raw,t2)+')';}}}},cutout:'60%'});
   const aVals=ageBands.map(b=>v.age?.[b]||0);

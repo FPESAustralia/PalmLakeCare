@@ -185,8 +185,8 @@ tbody tr{border-bottom:1px solid var(--border);} tbody tr:hover{background:#f0f9
     <div class="card"><h3>Age Distribution</h3><div class="csub">All assessments</div><div class="cw"><canvas id="cAge"></canvas></div></div>
   </div>
   <div class="row c2">
-    <div class="card"><h3>Suitability by Gender</h3><div class="csub">Role-adjusted % suitable by gender</div><div class="cw"><canvas id="cSuitGender"></canvas></div></div>
-    <div class="card"><h3>Suitability by Age Group</h3><div class="csub">Role-adjusted % suitable per age band</div><div class="cw"><canvas id="cSuitAge"></canvas></div></div>
+    <div class="card"><h3>Suitability by Gender</h3><div class="csub">All-time suitability % by gender</div><div class="cw"><canvas id="cSuitGender"></canvas></div></div>
+    <div class="card"><h3>Suitability by Age Group</h3><div class="csub">All-time suitability % per age band</div><div class="cw"><canvas id="cSuitAge"></canvas></div></div>
   </div>
 </div>
 
@@ -437,7 +437,8 @@ function renderAll(){
   dc('cAge','bar',{labels:ageBands,datasets:[{label:'Count',data:aVals,backgroundColor:T,borderRadius:4}]},{plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const t2=aVals.reduce((a,b)=>a+b,0);return ctx.parsed.y+' ('+pct(ctx.parsed.y,t2)+')';}}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#eef2f5'}}}});
   const gK=['Male','Female'],gSP=gK.map(g=>RAW.genderSuit?.[g]?.suit_pct||0),gUP=gK.map(g=>+(100-(RAW.genderSuit?.[g]?.suit_pct||0)).toFixed(1));
   dc('cSuitGender','bar',{labels:gK,datasets:[{label:'Suitable',data:gSP,backgroundColor:G,stack:'g'},{label:'Unsuitable',data:gUP,backgroundColor:R,stack:'g'}]},{plugins:{legend:{position:'top'},tooltip:{callbacks:{label:ctx=>{const g=gK[ctx.dataIndex],d=RAW.genderSuit?.[g];return ctx.dataset.label==='Suitable'?'Suitable: '+(d?.suit||0)+' ('+(d?.suit_pct||0)+'%)':'Unsuitable: '+((d?.total||0)-(d?.suit||0))+' ('+(100-(d?.suit_pct||0)).toFixed(1)+'%)';}}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,min:0,max:100,ticks:{callback:v=>v+'%'}}}});
-  dc('cSuitAge','bar',{labels:ageBands,datasets:[{label:'Suit %',data:ageSuitRates,backgroundColor:ageSuitRates.map(r=>r>=95?G:r>=85?A:R),borderRadius:4}]},{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{min:0,max:100,grid:{color:'#eef2f5'},ticks:{callback:v=>v+'%'}}}});
+  const _aSR=RAW.ageSuitRates||ageSuitRates;
+  dc('cSuitAge','bar',{labels:ageBands,datasets:[{label:'Suit %',data:_aSR,backgroundColor:_aSR.map(r=>r>=95?G:r>=85?A:R),borderRadius:4}]},{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{min:0,max:100,grid:{color:'#eef2f5'},ticks:{callback:v=>v+'%'}}}});
 
   const taM=mB.map(b=>b.ta||0),taMPos=taM.filter(t=>t>0);
   const bestTA=taMPos.length?Math.min(...taMPos):0;
@@ -445,9 +446,14 @@ function renderAll(){
   dc('cTAMonth','bar',{labels,datasets:[{label:'Median days',data:taM.map(h=>h?(h/24).toFixed(1):0),backgroundColor:taM.map(h=>h>0&&h/24<=5?G:T),borderRadius:5}]},{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#eef2f5'},ticks:{callback:v=>v+' bd'}}}});
 
   if(HAS_COMPANIES){
-    const filtCos=(RAW.companies||[]).filter(c=>aSite==='all'||c.name===aSite).filter(c=>parseFloat(c.ta)>0);
-    window._taCos=filtCos.map(c=>{const ta=parseFloat(c.ta);return{name:c.name,display:c.display||c.name,ta};});
-    const cosTA=[...filtCos].sort((a,b)=>parseFloat(a.ta)-parseFloat(b.ta));
+    const filtCos=(RAW.companies||[]).filter(c=>aSite==='all'||c.name===aSite).map(c=>{
+      const E2={total:0,suitable:0,unsuitable:0,medium:0,light:0,notsuit:0,suit_pct:0,ta:0,male:0,female:0,unspecified:0,age:{},k10:{low:0,moderate:0,high:0,vhigh:0},psych:{high:0,low:0,suit_high:0,suit_low:0,unsuit_high:0,unsuit_low:0}};
+      const bktsC=months.map(m=>aPos!=='all'?c.byPos?.[aPos]?.[m]||E2:c.byMonth?.[m]||E2);
+      const mv2=merge(bktsC);
+      return{name:c.name,display:c.display||c.name,ta:mv2.ta,total:mv2.total};
+    }).filter(c=>c.ta>0);
+    window._taCos=filtCos.map(c=>({name:c.name,display:c.display||c.name,ta:c.ta}));
+    const cosTA=[...filtCos].sort((a,b)=>a.ta-b.ta);
     if(cosTA.length){se('kpiFastestTA',cosTA[0].ta<12?'Same Day':fmtD(parseFloat(cosTA[0].ta)));se('kpiFastestSite',cosTA[0].display||cosTA[0].name);se('kpiSlowestTA',fmtD(parseFloat(cosTA[cosTA.length-1].ta)));se('kpiSlowestSite',cosTA[cosTA.length-1].display||cosTA[cosTA.length-1].name);}
     renderTASite(window._taSortDir||'none');
 
